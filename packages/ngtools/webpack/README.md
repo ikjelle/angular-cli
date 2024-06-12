@@ -28,12 +28,56 @@ exports = {
     new AngularWebpackPlugin({
       tsconfig: 'path/to/tsconfig.json',
       // ... other options as needed
-    }),
+    },
+    [
+      // list of typescript transformers
+    ]),
   ],
 };
 ```
 
 The loader works with webpack plugin to compile the application's TypeScript. It is important to include both, and to not include any other TypeScript loader.
+To use typsescript transformers add them in as second argument. !WARNING!: I guess this isn't supported for a reason, so make sure your output is correct.
+
+### Transformer Example
+Example of removing statements in typescript.
+```typescript
+import ts = require("typescript");
+
+function transformer(
+  program?: ts.BuilderProgram // <-- Seems like this can supply you important functions like typechecker, but not required to be input
+): ts.TransformerFactory<ts.SourceFile> {
+    return (context: ts.TransformationContext) => {
+        const visitNode: ts.Visitor = (node: any) => {
+            if (node.expression &&
+                ts.isCallExpression(node.expression) &&
+                ts.isIdentifier(node.expression.expression)) {
+                const decoratorIdentifier = node.expression.expression;
+                // remove this node as its just meant for metadata, not for compiling
+                if (decoratorIdentifier.text == "MyMetaDataDecorator") {
+                        return undefined;
+                }
+            }
+            return ts.visitEachChild(node, visitNode, context);
+        };
+
+        return (sourceFile: ts.SourceFile) => {
+            let updatedSourceFile = ts.visitEachChild(sourceFile, visitNode, context);
+            return updatedSourceFile;
+        };
+    };
+}
+
+// create plugin
+new AngularWebpackPlugin({
+    tsconfig: 'path/to/tsconfig.json',
+    // ... other options as needed
+  },
+  [
+    transformer
+  ]
+)
+```
 
 ## Options
 

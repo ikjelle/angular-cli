@@ -1,3 +1,17 @@
+# What I added
+Added typloader on ngtools/webpack.
+To generate the code use code below
+```sh
+sudo bazel query --output=label "attr('tags', '\[.*release-package  .*\]', //packages/...) intersect kind('ng_package|pkg_npm', //packages/...)"
+
+sudo bazel build packages/ngtools/webpack:npm_package
+```
+I mean, i dont know how bazel works and it seems like its made to build everything at once and push them to their own npm place... So just do this and copy source from output place.
+which looks like to be here:
+```sh
+~/.cache/bazel/_bazel_root/$HASH/execroot/angular_cli/bazel-out/k8-fastbuild/bin/packages/ngtools/webpack/npm_package
+$HASH = something, sometimes outputted when running commands. Also delete all before rebuilding. (I think)
+``` 
 <!--
   BEFORE UPDATING THIS FILE, READ THIS.
 

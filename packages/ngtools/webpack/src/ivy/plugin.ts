@@ -84,8 +84,10 @@ export class AngularWebpackPlugin {
   private readonly requiredFilesToEmit = new Set<string>();
   private readonly requiredFilesToEmitCache = new Map<string, EmitFileResult | undefined>();
   private readonly fileEmitHistory = new Map<string, FileEmitHistoryItem>();
+  // IMPORTANT: angular doesnt allow this for a reason. So make sure the output is correct.
+  transformers: ((program?: ts.BuilderProgram) => ts.TransformerFactory<ts.SourceFile> | ts.CustomTransformerFactory)[] = [];
 
-  constructor(options: Partial<AngularWebpackPluginOptions> = {}) {
+  constructor(options: Partial<AngularWebpackPluginOptions> = {}, transformers: ((program?: ts.BuilderProgram) => ts.TransformerFactory<ts.SourceFile> | ts.CustomTransformerFactory)[] = []) {
     this.pluginOptions = {
       emitClassMetadata: false,
       emitNgModuleScope: false,
@@ -96,6 +98,7 @@ export class AngularWebpackPlugin {
       tsconfig: 'tsconfig.json',
       ...options,
     };
+    this.transformers = transformers;
   }
 
   private get compilerCli(): typeof import('@angular/compiler-cli') {
@@ -646,6 +649,8 @@ export class AngularWebpackPlugin {
     getExtraDependencies: (sourceFile: ts.SourceFile) => Iterable<string>,
     onAfterEmit?: (sourceFile: ts.SourceFile) => void,
   ): FileEmitter {
+    // Add transformers and supply them with the program. (for when they need ts functions)
+    transformers.before = [...this.transformers.map(t => t(program)), ...transformers.before!];
     return async (file: string) => {
       const filePath = normalizePath(file);
       if (this.requiredFilesToEmitCache.has(filePath)) {
